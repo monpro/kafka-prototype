@@ -4,6 +4,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
@@ -84,10 +85,16 @@ public class Consumer {
             properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
             properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
             properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-            properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+//            properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
 
             consumer = new KafkaConsumer<String, String>(properties);
-            consumer.subscribe(Arrays.asList(topic));
+//            consumer.subscribe(Arrays.asList(topic));
+
+            TopicPartition topicPartition = new TopicPartition(topic, 0);
+            long offsetStart = 15L;
+            consumer.assign(Arrays.asList(topicPartition));
+
+            consumer.seek(topicPartition, offsetStart);
 
         }
 
