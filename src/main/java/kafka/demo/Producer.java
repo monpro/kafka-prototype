@@ -11,7 +11,7 @@ import java.util.concurrent.ExecutionException;
 public class Producer {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         //define Producer properties
-        final Logger logger = LoggerFactory.getLogger(Producer.class);
+        final Logger logger = LoggerFactory.getLogger(Producer.class.getName());
 
         Properties properties = new Properties();
         String bootstrapServers = "127.0.0.1:9092";
