@@ -6,9 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 
 public class Producer {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
         //define Producer properties
         final Logger logger = LoggerFactory.getLogger(Producer.class);
 
@@ -23,10 +24,16 @@ public class Producer {
         KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
         for(int i = 0; i < 10; i++) {
 
+            String topic = "first_topic";
+            String value = "test_message" + Integer.toString(i);
+            String key = "id_" + Integer.toString(i);
+            //by specifying the key,
+            // same key will always go to the same partition for a fix number of partitions
 
             final ProducerRecord<String, String> record =
-                    new ProducerRecord<String, String>("first_topic", "test_message" + Integer.toString(i));
+                    new ProducerRecord<String, String>(topic, key, value);
 
+            logger.info("Key: " + key);
             //send data - async
             producer.send(record, new Callback() {
                 public void onCompletion(RecordMetadata recordMetadata, Exception e) {
@@ -41,7 +48,7 @@ public class Producer {
                         logger.error("error for producer", e);
                     }
                 }
-            });
+            }).get(); //block send() to make requests in sync, not in PROD!
         }
 
         producer.flush();
