@@ -30,7 +30,7 @@ public class TwitterProducer {
     String consumerSecret = "30fxYp7ogCSpLN7hUTLQwNAYOlXAM4WQmsnEjGov0kkNcFczQg";
     String token = "1064278418798272512-YdOLOQjUAianiHu4OFmDkzbBA2nVEp";
     String secret = "BLKmnLKbCbRpGsSXNIjF5zGlXQrr9209MI06yOfhbGmiX";
-    List<String> terms = Lists.newArrayList("bitcoin");
+    List<String> terms = Lists.newArrayList("bitcoin", "arup");
 
 
     private TwitterProducer(){
@@ -79,7 +79,6 @@ public class TwitterProducer {
         logger.info("end");
     }
 
-
     public Client createTwitterClient(BlockingQueue<String> msgQueue){
 
         /** Declare the host you want to connect to, the endpoint, and authentication (basic auth or oauth) */
@@ -93,15 +92,15 @@ public class TwitterProducer {
         Authentication hosebirdAuth = new OAuth1(consumerKey, consumerSecret, token, secret);
 
         ClientBuilder builder = new ClientBuilder()
-                .name("Hosebird-Client-01")                              // optional: mainly for the logs
+                .name("Hosebird-Client-01")
                 .hosts(hosebirdHosts)
                 .authentication(hosebirdAuth)
                 .endpoint(hosebirdEndpoint)
                 .processor(new StringDelimitedProcessor(msgQueue));
 
         Client hosebirdClient = builder.build();
-        return hosebirdClient;
 
+        return hosebirdClient;
     }
 
     public KafkaProducer<String, String> createProducer(){
@@ -110,6 +109,11 @@ public class TwitterProducer {
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        //create a safe producer
+        properties.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
+        properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
+        properties.setProperty(ProducerConfig.RETRIES_CONFIG, Integer.toString(Integer.MAX_VALUE));
+        properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5");
 
         KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
 
