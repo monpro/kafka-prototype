@@ -1,4 +1,4 @@
-package twitter.stream;
+package stream;
 
 import com.google.common.collect.Lists;
 import com.twitter.hbc.ClientBuilder;
@@ -30,7 +30,7 @@ public class TwitterProducer {
     String consumerSecret = "30fxYp7ogCSpLN7hUTLQwNAYOlXAM4WQmsnEjGov0kkNcFczQg";
     String token = "1064278418798272512-YdOLOQjUAianiHu4OFmDkzbBA2nVEp";
     String secret = "BLKmnLKbCbRpGsSXNIjF5zGlXQrr9209MI06yOfhbGmiX";
-    List<String> terms = Lists.newArrayList("bitcoin", "arup");
+    List<String> terms = Lists.newArrayList("politics", "nba", "usa");
 
 
     private TwitterProducer(){
@@ -114,6 +114,12 @@ public class TwitterProducer {
         properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
         properties.setProperty(ProducerConfig.RETRIES_CONFIG, Integer.toString(Integer.MAX_VALUE));
         properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5");
+
+
+        //high throughput setting
+        properties.setProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
+        properties.setProperty(ProducerConfig.LINGER_MS_CONFIG, "20");
+        properties.setProperty(ProducerConfig.BATCH_SIZE_CONFIG, Integer.toString(32 * 1024));
 
         KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
 
