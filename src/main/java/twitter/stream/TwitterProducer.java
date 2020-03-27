@@ -10,10 +10,15 @@ import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint;
 import com.twitter.hbc.core.processor.StringDelimitedProcessor;
 import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +30,8 @@ public class TwitterProducer {
     String consumerSecret = "30fxYp7ogCSpLN7hUTLQwNAYOlXAM4WQmsnEjGov0kkNcFczQg";
     String token = "1064278418798272512-YdOLOQjUAianiHu4OFmDkzbBA2nVEp";
     String secret = "BLKmnLKbCbRpGsSXNIjF5zGlXQrr9209MI06yOfhbGmiX";
+    List<String> terms = Lists.newArrayList("bitcoin");
+
 
     private TwitterProducer(){
 
@@ -40,8 +47,9 @@ public class TwitterProducer {
         BlockingQueue<String> msgQueue = new LinkedBlockingQueue<String>(1000);
         //create a twitter client
         Client twitterClient = createTwitterClient(msgQueue);
-        //create a kafka producer
         twitterClient.connect();
+        //create a kafka producer
+        KafkaProducer<String, String> producer = createProducer();
         //send tweets to kafka
 
         while (!twitterClient.isDone()){
@@ -54,6 +62,7 @@ public class TwitterProducer {
 
             if(msg != null){
                 logger.info(msg);
+                producer.send(new ProducerRecord<>("tweets", null, msg));
             }
 
         }
@@ -69,7 +78,6 @@ public class TwitterProducer {
         StatusesFilterEndpoint hosebirdEndpoint = new StatusesFilterEndpoint();
 
         // Optional: set up some followings and track terms
-        List<String> terms = Lists.newArrayList("bitcoin");
         hosebirdEndpoint.trackTerms(terms);
 
         // These secrets should be read from a config file
@@ -85,6 +93,19 @@ public class TwitterProducer {
         Client hosebirdClient = builder.build();
         return hosebirdClient;
 
+    }
+
+    public KafkaProducer<String, String> createProducer(){
+        Properties properties = new Properties();
+        String bootstrapServers = "127.0.0.1:9092";
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+
+        KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
+
+
+        return producer;
     }
 
 
