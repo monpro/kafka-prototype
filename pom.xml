@@ -23,6 +23,7 @@
     <modules>
         <module>kafka-poc</module>
         <module>kafka-twitter-producer</module>
+        <module>kafka-twitter-consumer</module>
     </modules>
 
 </project>
