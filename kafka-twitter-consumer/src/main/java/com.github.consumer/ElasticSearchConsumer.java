@@ -6,6 +6,11 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -15,6 +20,9 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 public class ElasticSearchConsumer {
@@ -42,22 +50,53 @@ public class ElasticSearchConsumer {
 
     }
 
+    public static KafkaConsumer<String, String> createConsumer(String topic){
+
+        String bootstrapServer = "127.0.0.1:9092";
+        String groupId = "es-search-group";
+
+        Properties properties = new Properties();
+        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
+        properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(properties);
+        consumer.subscribe(Arrays.asList(topic));
+
+        return consumer;
+    }
     public static void main(String[] args) throws IOException {
         Logger logger = Logger.getLogger(ElasticSearchConsumer.class.getName());
 
         RestHighLevelClient client = createClient();
-        String jsonString = "{\"test\" : \"result\"}";
-        IndexRequest indexRequest = new IndexRequest(
-                "twitter",
-                "tweets"
-        ).source(jsonString, XContentType.JSON);
 
-        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
-        String id = indexResponse.getId();
 
-        logger.info(id);
+        KafkaConsumer<String, String> consumer = createConsumer("tweets");
 
-        client.close();
+        while(true){
+            ConsumerRecords<String, String> records =
+                    consumer.poll(Duration.ofMillis(100));
+
+            for(ConsumerRecord<String, String> record: records){
+                IndexRequest indexRequest = new IndexRequest(
+                        "twitter",
+                        "tweets"
+                ).source(record.value(), XContentType.JSON);
+
+                IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+                String id = indexResponse.getId();
+                logger.info(id);
+                try {
+                    Thread.sleep(1000); // a small delay
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+//        client.close();
 
     }
 
