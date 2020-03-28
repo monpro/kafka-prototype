@@ -1,5 +1,6 @@
 package com.github.consumer;
 
+import com.google.gson.JsonParser;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -26,6 +27,7 @@ import java.util.Properties;
 import java.util.logging.Logger;
 
 public class ElasticSearchConsumer {
+    private static JsonParser jsonParser = new JsonParser();
 
     public static RestHighLevelClient createClient(){
         String hostname = Constants.hostname;
@@ -50,8 +52,8 @@ public class ElasticSearchConsumer {
 
     }
 
-    public static KafkaConsumer<String, String> createConsumer(String topic){
 
+    public static KafkaConsumer<String, String> createConsumer(String topic){
         String bootstrapServer = "127.0.0.1:9092";
         String groupId = "es-search-group";
 
@@ -67,6 +69,14 @@ public class ElasticSearchConsumer {
 
         return consumer;
     }
+
+    private static String getIdFromTweet(String tweet){
+        return jsonParser.parse(tweet)
+                .getAsJsonObject()
+                .get("id_str")
+                .getAsString();
+    }
+
     public static void main(String[] args) throws IOException {
         Logger logger = Logger.getLogger(ElasticSearchConsumer.class.getName());
 
@@ -80,14 +90,16 @@ public class ElasticSearchConsumer {
                     consumer.poll(Duration.ofMillis(100));
 
             for(ConsumerRecord<String, String> record: records){
+                String id = getIdFromTweet(record.value());
+
                 IndexRequest indexRequest = new IndexRequest(
                         "twitter",
-                        "tweets"
+                        "tweets",
+                        id
                 ).source(record.value(), XContentType.JSON);
 
                 IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
-                String id = indexResponse.getId();
-                logger.info(id);
+                logger.info(indexResponse.getId());
                 try {
                     Thread.sleep(1000); // a small delay
                 } catch (InterruptedException e) {
@@ -95,9 +107,5 @@ public class ElasticSearchConsumer {
                 }
             }
         }
-
-//        client.close();
-
     }
-
 }
