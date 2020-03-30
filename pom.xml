@@ -24,6 +24,7 @@
         <module>kafka-poc</module>
         <module>kafka-twitter-producer</module>
         <module>kafka-twitter-consumer</module>
+        <module>kafka-stream</module>
     </modules>
 
 </project>
