@@ -1,5 +1,6 @@
 package com.github.kafka.stream;
 
+import com.google.gson.JsonParser;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
@@ -23,7 +24,24 @@ public class StreamsFilterTweets {
 
         KStream<String, String> inputTopic = streamsBuilder.stream("twitter_topics");
 
+        KStream<String, String> filteredStream = inputTopic.filter(
+                (k, tweet) -> getUserFollowersCount(tweet) > 10000
+        );
 
         //
+    }
+    private static JsonParser jsonParser = new JsonParser();
+
+    private static Integer getUserFollowersCount(String tweet){
+        try {
+            return jsonParser.parse(tweet).
+                    getAsJsonObject().
+                    get("user").
+                    getAsJsonObject().
+                    get("followers_count").
+                    getAsInt();
+        }catch (NullPointerException e){
+            return 0;
+        }
     }
 }
